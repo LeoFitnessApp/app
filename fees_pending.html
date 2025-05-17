@@ -8,7 +8,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
 </head>
 <body>
- <nav class="navbar navbar-expand-lg bg-body-tertiary">
+  <nav class="navbar navbar-expand-lg bg-body-tertiary">
     <div class="container-fluid">
       <a class="navbar-brand" href="index.html">Leo Fitness</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
@@ -17,37 +17,21 @@
       </button>
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <li class="nav-item">
-            <a class="nav-link active" aria-current="page" href="index.html">Home</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="view_member.html">Member</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="Add_Member.html">Add Member</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="Add_Fee.html">Add Fee</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="fees_pending.html">Pending Fees</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="backup.html">Backup</a>
-          </li>
-          <li>
-            <a class="nav-link" href="Edit.html">Member Edit</a>
-          </li>
-          <li>
-            <a class="nav-link" href="edittrans.html">Fees Edit</a>
-          </li>
+          <li class="nav-item"><a class="nav-link active" aria-current="page" href="index.html">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="view_member.html">Member</a></li>
+          <li class="nav-item"><a class="nav-link" href="Add_Member.html">Add Member</a></li>
+          <li class="nav-item"><a class="nav-link" href="Add_Fee.html">Add Fee</a></li>
+          <li class="nav-item"><a class="nav-link" href="fees_pending.html">Pending Fees</a></li>
+          <li class="nav-item"><a class="nav-link" href="backup.html">Backup</a></li>
+          <li class="nav-item"><a class="nav-link" href="Edit.html">Member Edit</a></li>
+          <li class="nav-item"><a class="nav-link" href="edittrans.html">Fees Edit</a></li>
         </ul>
       </div>
     </div>
   </nav>
 
   <div class="container my-5">
-    <h2 class="mb-4">Pending Fees Overdue by 3+ Days</h2>
+    <h2 class="mb-4">Pending Fees Overdue</h2>
     <div id="pending-fees-container">
       <p>Loading pending fees...</p>
     </div>
@@ -67,18 +51,27 @@
         const container = document.getElementById('pending-fees-container');
 
         if (pendingFees.length === 0) {
-          container.innerHTML = '<p>No pending fees overdue by 3 or more days.</p>';
+          container.innerHTML = '<p>No pending fees overdue.</p>';
           return;
         }
 
-        let tableRows = pendingFees.map(fee => `
-          <tr>
-            <td>${fee.id}</td>
-            <td>${fee.name}</td>
-            <td>${fee.phone_number}</td>
-            <td>${fee.fess_due}</td>
-          </tr>
-        `).join('');
+        let tableRows = pendingFees.map(fee => {
+          const phone = fee.phone_number;
+          const name = fee.name;
+          const dueDate = fee.fess_due;
+          const message = encodeURIComponent(`Hi ${name}, your gym fee is pending since ${dueDate}. Please make the payment soon. - Leo Fitness`);
+          const waLink = `https://wa.me/${phone}?text=${message}`;
+
+          return `
+            <tr>
+              <td>${fee.id}</td>
+              <td>${name}</td>
+              <td>${phone}</td>
+              <td>${dueDate}</td>
+              <td><a href="${waLink}" class="btn btn-success btn-sm" target="_blank">Send Message</a></td>
+            </tr>
+          `;
+        }).join('');
 
         container.innerHTML = `
           <div class="table-responsive">
@@ -89,6 +82,7 @@
                   <th>Name</th>
                   <th>Phone Number</th>
                   <th>Due Date</th>
+                  <th>Send Message</th>
                 </tr>
               </thead>
               <tbody>
