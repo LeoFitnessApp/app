@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gym Fee Dashboard</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- DataTables CSS -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" />
+  <style>
+    .card {
+      border-radius: 1rem;
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    .dashboard-title {
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .value-display {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #0d6efd;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg bg-body-tertiary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/index.html">Leo Fitness</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="/index.html">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/view_member.html">Member</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/Add_Member.html">Add Member</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/Add_Fee.html">Add Fee</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/fees_pending.html">Pending Fees</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/backup.html">Backup</a>
+          </li>
+          <li>
+            <a class="nav-link" href="/edit.html">Member Edit</a>
+          </li>
+          <li>
+            <a class="nav-link" href="/edittrans.html">Fees Edit</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Dashboard Cards -->
+  <div class="container my-5">
+    <h2 class="dashboard-title">Gym Fee Dashboard</h2>
+    <div class="row g-4">
+      <div class="col-md-6 col-lg-3">
+        <div class="card p-4 text-center">
+          <div class="card-body">
+            <h5 class="card-title">Today</h5>
+            <p id="today-sum" class="value-display">₹0</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-3">
+        <div class="card p-4 text-center">
+          <div class="card-body">
+            <h5 class="card-title">Yesterday</h5>
+            <p id="yesterday-sum" class="value-display">₹0</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-3">
+        <div class="card p-4 text-center">
+          <div class="card-body">
+            <h5 class="card-title">Last 7 Days</h5>
+            <p id="week-sum" class="value-display">₹0</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-3">
+        <div class="card p-4 text-center">
+          <div class="card-body">
+            <h5 class="card-title">Last 30 Days</h5>
+            <p id="month-sum" class="value-display">₹0</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transactions Table -->
+  <div class="container mt-5">
+    <h2 class="mb-4">Today's Transactions</h2>
+    <div class="table-responsive">
+      <table id="transactions-table" class="table table-bordered table-striped">
+        <thead class="table-dark">
+          <tr>
+            <th>ID</th>
+            <th>Phone Number</th>
+            <th>Fees</th>
+            <th>Fees Month</th>
+            <th>Paid at</th>
+          </tr>
+        </thead>
+        <tbody id="transactions-body">
+          <tr><td colspan="5">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <!-- DataTables JS -->
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+
+  <script>
+    // Function to fetch and display transactions
+    fetch('https://shagunivf.com/gym_management/gettoday.php')
+      .then(response => response.json())
+      .then(data => {
+        const tbody = document.getElementById('transactions-body');
+        tbody.innerHTML = '';
+
+        if (data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5">No transactions today.</td></tr>';
+          return;
+        }
+        console.log(data);
+        data.forEach(item => {
+          const row = `
+            <tr>
+              <td>${item.id}</td>
+              <td>${item.name}</td>
+              <td>${item.member_id}</td>
+              <td>₹${item.fees}</td>
+              <td>${item.fees_month}</td>
+              <td>${item.created_at}</td>
+            </tr>
+          `;
+          tbody.insertAdjacentHTML('beforeend', row);
+        });
+
+        // Initialize DataTables after data is populated
+        $('#transactions-table').DataTable({
+          pageLength: 10,
+          lengthChange: false,
+          searching: true,
+          ordering: true,
+          info: true
+        });
+      })
+      .catch(error => {
+        document.getElementById('transactions-body').innerHTML = '<tr><td colspan="5">Error fetching data.</td></tr>';
+        console.error('Error:', error);
+      });
+
+    // Functions to fetch and display dashboard summaries
+    async function fetchByDate(dateStr) {
+      const response = await fetch(`https://shagunivf.com/gym_management/samedaytrans.php?date=${dateStr}`);
+      const data = await response.json();
+      return parseFloat(data.total_fees || 0);
+    }
+
+    async function fetchSum(days) {
+      const response = await fetch(`https://shagunivf.com/gym_management/samedaytrans.php?days=${days}`);
+      const data = await response.json();
+      return parseFloat(data.total_fees || 0);
+    }
+
+    function formatDate(dateObj) {
+      const yyyy = dateObj.getFullYear();
+      const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const dd = String(dateObj.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    async function updateDashboard() {
+      const today = new Date();
+      const yesterday = new Date();
+      yesterday.setDate(today.getDate() - 1);
+
+      const todayStr = formatDate(today);
+      const yesterdayStr = formatDate(yesterday);
+
+      document.getElementById('today-sum').textContent = `₹${(await fetchByDate(todayStr)).toFixed(2)}`;
+      document.getElementById('yesterday-sum').textContent = `₹${(await fetchByDate(yesterdayStr)).toFixed(2)}`;
+      document.getElementById('week-sum').textContent = `₹${(await fetchSum(7)).toFixed(2)}`;
+      document.getElementById('month-sum').textContent = `₹${(await fetchSum(30)).toFixed(2)}`;
+    }
+
+    // Initialize dashboard summaries
+    updateDashboard();
+  </script>
+</body>
+</html>

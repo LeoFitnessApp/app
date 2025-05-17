@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Update Member Fee</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .results { border: 1px solid #ccc; max-height: 200px; overflow-y: auto; background: white; position: absolute; width: 100%; z-index: 1000; }
+    .result-item { padding: 8px; cursor: pointer; }
+    .result-item:hover { background: #f1f1f1; }
+    .message { margin-top: 10px; font-weight: bold; }
+    .error { color: red; }
+    .success { color: green; }
+    .relative { position: relative; }
+  </style>
+</head>
+<body class="bg-light py-4">
+ <nav class="navbar navbar-expand-lg bg-body-tertiary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/index.html">Leo Fitness</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="/index.html">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/view_member.html">Member</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/Add_Member.html">Add Member</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/Add_Fee.html">Add Fee</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/fees_pending.html">Pending Fees</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/backup.html">Backup</a>
+          </li>
+          <li>
+            <a class="nav-link" href="/edit.html">Member Edit</a>
+          </li>
+          <li>
+            <a class="nav-link" href="/edittrans.html">Fees Edit</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+<div class="container">
+  <h2 class="mb-4">Search & Update Member Fee</h2>
+
+  <div class="mb-3 relative">
+    <label for="searchFeeInput" class="form-label">Search by Transaction ID</label>
+    <input type="text" id="searchFeeInput" class="form-control" placeholder="Start typing name or ID..." autocomplete="off">
+    <div class="results" id="feeResults"></div>
+  </div>
+
+  <form id="updateFeeForm" style="display:none;" class="card card-body shadow-sm mt-4">
+    <h4>Edit Fee Record</h4>
+    <input type="hidden" id="feeId" />
+
+    <div class="mb-3">
+      <label for="memberIdInput" class="form-label">Member ID</label>
+      <input type="text" id="memberIdInput" class="form-control" required />
+    </div>
+
+    <div class="mb-3">
+      <label for="nameInput" class="form-label">Name</label>
+      <input type="text" id="nameInput" class="form-control" required />
+    </div>
+
+    <div class="mb-3">
+      <label for="feesInput" class="form-label">Fees Paid</label>
+      <input type="number" id="feesInput" class="form-control" required />
+    </div>
+
+    <div class="mb-3">
+      <label for="feesMonthInput" class="form-label">Fees Month</label>
+      <input type="number" id="feesMonthInput" class="form-control" required />
+    </div>
+
+    <div class="mb-3">
+      <label for="dueFeeInput" class="form-label">Due Fee</label>
+      <input type="date" id="dueFeeInput" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+      <label for="feesDateInput" class="form-label">Fees Date</label>
+      <input type="date" id="feesDateInput" class="form-control" required />
+    </div>
+
+    <div class="mb-3">
+      <label for="createdAtInput" class="form-label">Created At</label>
+      <input type="datetime-local" id="createdAtInput" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Update Fee</button>
+    <div class="message" id="feeMessage"></div>
+  </form>
+</div>
+
+<script>
+  const searchInput = document.getElementById('searchFeeInput');
+  const resultsDiv = document.getElementById('feeResults');
+  const form = document.getElementById('updateFeeForm');
+  const feeMessage = document.getElementById('feeMessage');
+
+  const feeId = document.getElementById('feeId');
+  const memberIdInput = document.getElementById('memberIdInput');
+  const nameInput = document.getElementById('nameInput');
+  const feesInput = document.getElementById('feesInput');
+  const feesMonthInput = document.getElementById('feesMonthInput');
+  const dueFeeInput = document.getElementById('dueFeeInput');
+  const createdAtInput = document.getElementById('createdAtInput');
+  const feesDateInput = document.getElementById('feesDateInput');
+
+  let debounce = null;
+
+  // Search fee records
+  searchInput.addEventListener('input', () => {
+    clearTimeout(debounce);
+    const term = searchInput.value.trim();
+    resultsDiv.innerHTML = '';
+    form.style.display = 'none';
+    feeMessage.textContent = '';
+
+    if (term.length < 2) return;
+
+    debounce = setTimeout(() => {
+      fetch(`https://shagunivf.com/gym_management/search_fees_edit.php?term=${encodeURIComponent(term)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.data.length > 0) {
+            resultsDiv.innerHTML = '';
+            data.data.forEach(fee => {
+              const div = document.createElement('div');
+              div.className = 'result-item';
+              div.textContent = `${fee.name} (ID: ${fee.member_id}) - ${fee.fees_month}`;
+              div.dataset.id = fee.id;
+              resultsDiv.appendChild(div);
+            });
+          } else {
+            resultsDiv.innerHTML = '<div class="result-item">No results found</div>';
+          }
+        })
+        .catch(() => {
+          resultsDiv.innerHTML = '<div class="result-item error">Search failed</div>';
+        });
+    }, 300);
+  });
+
+  // Click to load fee record
+  resultsDiv.addEventListener('click', e => {
+    if (!e.target.classList.contains('result-item')) return;
+    const id = e.target.dataset.id;
+    resultsDiv.innerHTML = '';
+    searchInput.value = '';
+
+    fetch(`https://shagunivf.com/gym_management/get_fees_edit.php?id=${id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          populateForm(data.data);
+        } else {
+          feeMessage.textContent = 'Error: ' + data.message;
+          feeMessage.className = 'message error';
+        }
+      })
+      .catch(() => {
+        feeMessage.textContent = 'Failed to fetch fee data.';
+        feeMessage.className = 'message error';
+      });
+  });
+
+  function populateForm(data) {
+    feeId.value = data.id;
+    memberIdInput.value = data.member_id;
+    nameInput.value = data.name;
+    feesInput.value = data.fees;
+    feesMonthInput.value = data.fees_month;
+    dueFeeInput.value = data.due_fee;
+    feesDateInput.value = data.fees_date;
+    createdAtInput.value = data.created_at?.slice(0, 16) || '';
+    form.style.display = 'block';
+    feeMessage.textContent = '';
+    feeMessage.className = 'message';
+  }
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    feeMessage.textContent = '';
+    feeMessage.className = 'message';
+
+    const payload = {
+      id: parseInt(feeId.value),
+      member_id: memberIdInput.value.trim(),
+      name: nameInput.value.trim(),
+      fees: parseFloat(feesInput.value),
+      fees_month: feesMonthInput.value,
+      due_fee:dueFeeInput.value,
+      fees_date: feesDateInput.value,
+      created_at: createdAtInput.value
+    };
+
+    fetch('https://shagunivf.com/gym_management/update_fees_edit.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        feeMessage.textContent = 'Fee updated successfully.';
+        feeMessage.className = 'message success';
+      } else {
+        feeMessage.textContent = 'Update failed: ' + data.message;
+        feeMessage.className = 'message error';
+      }
+    })
+    .catch(() => {
+      feeMessage.textContent = 'Update request failed.';
+      feeMessage.className = 'message error';
+    });
+  });
+</script>
+
+</body>
+</html>

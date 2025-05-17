@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Add Fees Record</title>
+  <!-- Bootstrap CSS CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    .suggestions {
+      border: 1px solid #ccc;
+      max-height: 150px;
+      overflow-y: auto;
+      position: absolute;
+      z-index: 1050;
+      background: white;
+      width: 100%;
+    }
+
+    .suggestion-item {
+      padding: 0.5rem;
+      cursor: pointer;
+    }
+
+    .suggestion-item:hover {
+      background-color: #f0f0f0;
+    }
+
+    /* To keep suggestions aligned */
+    #search-group {
+      position: relative;
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg bg-body-tertiary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/index.html">Leo Fitness</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="/index.html">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/view_member.html">Member</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/Add_Member.html">Add Member</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/Add_Fee.html">Add Fee</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/fees_pending.html">Pending Fees</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/backup.html">Backup</a>
+          </li>
+          <li>
+            <a class="nav-link" href="/edit.html">Member Edit</a>
+          </li>
+          <li>
+            <a class="nav-link" href="/edittrans.html">Fees Edit</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container my-4">
+    <h2 class="mb-4">Add Fee Payment</h2>
+
+    <form id="feesForm" class="needs-validation" novalidate>
+
+      <div class="mb-3" id="search-group">
+        <label for="search" class="form-label">Search Member by Name or Phone Number:</label>
+        <input type="text" id="search" class="form-control" autocomplete="off"
+          placeholder="Type name or phone number..." required />
+        <div id="suggestions" class="suggestions" style="display:none;"></div>
+        <div class="invalid-feedback">Please select a member from the list.</div>
+      </div>
+
+      <input type="hidden" name="phone_number" id="phone_number" />
+
+      <div class="mb-3">
+        <label for="mobile_number" class="form-label">Mobile Number:</label>
+        <input type="text" name="mobile_number" id="mobile_number" class="form-control" readonly />
+      </div>
+      <div class="mb-3">
+        <label for="due_date" class="form-label">Due Date:</label>
+        <input type="date" name="due_date" id="due_date" class="form-control" readonly />
+      </div>
+      <div class="mb-3">
+        <label for="fees" class="form-label">Fees Amount:</label>
+        <input type="number" id="fees" name="fees" step="0.01" class="form-control" required />
+        <div class="invalid-feedback">Please enter the fees amount.</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="fees_month" class="form-label">Fees Month (1-12):</label>
+        <input type="number" name="fees_month" id="fees_month" min="1" max="12" class="form-control" required />
+        <div class="invalid-feedback">Please enter a valid month (1-12).</div>
+      </div>
+      <div class="mb-3">
+        <label for="due_mode" class="form-label">Due Date Option:</label>
+        <select id="due_mode" class="form-select" required>
+          <option value="">-- Select Option --</option>
+          <option value="extend">Extend Existing</option>
+          <option value="new">Start New</option>
+        </select>
+        <div class="invalid-feedback">Please select an option for due date update.</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="fees_date" class="form-label">Fees Paid Date:</label>
+        <input type="date" name="fees_date" id="fees_date" class="form-control" />
+      </div>
+
+      <button type="submit" class="btn btn-primary">Add Fees Record</button>
+    </form>
+  </div>
+
+  <!-- Bootstrap JS Bundle (Popper + Bootstrap JS) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    const searchInput = document.getElementById('search');
+    const suggestions = document.getElementById('suggestions');
+    const phoneNumberInput = document.getElementById('phone_number');
+    const mobileNumberInput = document.getElementById('mobile_number');
+    const feesForm = document.getElementById('feesForm');
+
+    searchInput.addEventListener('input', function () {
+      const query = this.value.trim();
+      phoneNumberInput.value = '';
+      mobileNumberInput.value = '';
+
+      if (query.length < 2) {
+        suggestions.style.display = 'none';
+        suggestions.innerHTML = '';
+        return;
+      }
+
+      fetch('https://shagunivf.com/gym_management/search_members.php?query=' + encodeURIComponent(query))
+        .then(response => response.json())
+        .then(data => {
+          if (data.length > 0) {
+            suggestions.innerHTML = '';
+            data.forEach(item => {
+              const div = document.createElement('div');
+              div.classList.add('suggestion-item');
+              div.textContent = `${item.name || 'Unknown Member'} — ${item.phone_number}`;
+
+              div.dataset.phone = item.phone_number;
+              div.dataset.name = item.name;
+              div.dataset.due = item.fess_due || ''; // Add due_date
+              div.addEventListener('click', () => {
+                searchInput.value = div.dataset.name || div.dataset.phone;
+                phoneNumberInput.value = div.dataset.phone;
+                mobileNumberInput.value = div.dataset.phone;
+                suggestions.style.display = 'none';
+                document.getElementById('due_date').value = div.dataset.due; // Set due date
+                suggestions.style.display = 'none';
+
+              });
+
+              suggestions.appendChild(div);
+            });
+            suggestions.style.display = 'block';
+          } else {
+            suggestions.style.display = 'none';
+            suggestions.innerHTML = '';
+          }
+        })
+        .catch(() => {
+          suggestions.style.display = 'none';
+          suggestions.innerHTML = '';
+        });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!suggestions.contains(e.target) && e.target !== searchInput) {
+        suggestions.style.display = 'none';
+      }
+    });
+
+    feesForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      if (!phoneNumberInput.value) {
+        searchInput.classList.add('is-invalid');
+        searchInput.focus();
+        return;
+      } else {
+        searchInput.classList.remove('is-invalid');
+      }
+
+      const formData = new URLSearchParams({
+        member_id: feesForm.mobile_number.value,
+        fees: feesForm.fees.value,
+        fees_month: feesForm.fees_month.value,
+        fees_date: feesForm.fees_date.value,
+        name:feesForm.search.value
+      });
+     
+      fetch('https://shagunivf.com/gym_management/add_fee.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData,
+      })
+        .then(response => response.text())
+        .then(result => {
+          console.log(feesForm.due_mode.value, typeof feesForm.due_mode.value)
+          const extend = "extend";
+          if (feesForm.due_mode.value === extend) {
+            const phone = feesForm.mobile_number.value;
+
+            let rawDate = feesForm.due_date.value;
+
+            if (!rawDate || rawDate === '0000-00-00') {
+              console.warn("Invalid or empty date");
+              // Set today's date as fallback or handle accordingly
+              rawDate = new Date().toISOString().split('T')[0];
+            }
+
+            let dueDate = new Date(rawDate);
+
+            if (isNaN(dueDate)) {
+              console.error("Invalid date input");
+            } else {
+              let monthsToAdd = parseInt(feesForm.fees_month.value, 10) || 0;
+              dueDate.setMonth(dueDate.getMonth() + monthsToAdd);
+
+              // ✅ Convert back to yyyy-MM-dd
+              const yyyy = dueDate.getFullYear();
+              const mm = String(dueDate.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+              const dd = String(dueDate.getDate()).padStart(2, '0');
+
+              const formattedDate = `${yyyy}-${mm}-${dd}`;
+              console.log("Formatted due date:", formattedDate);
+
+              // If you want to set it in an input:
+              // document.getElementById("due_date").value = formattedDate;
+              dueDate = formattedDate;
+            }
+
+            fetch('https://shagunivf.com/gym_management/update_due_date.php', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              body: `phone=${encodeURIComponent(phone)}&due_date=${encodeURIComponent(dueDate)}`
+            })
+              .then(response => response.text())
+              .then(data => {
+
+              })
+              .catch(error => {
+                console.error('Error:', error);
+              });
+
+          }
+
+          else{
+            let rawDate = feesForm.fees_date.value;
+
+            if (!rawDate || rawDate === '0000-00-00') {
+              console.warn("Invalid or empty date");
+              // Set today's date as fallback or handle accordingly
+              rawDate = new Date().toISOString().split('T')[0];
+            }
+            let dueDate = new Date(rawDate);
+             let monthsToAdd = parseInt(feesForm.fees_month.value, 10) || 0;
+              dueDate.setMonth(dueDate.getMonth() + monthsToAdd);
+              const yyyy = dueDate.getFullYear();
+              const mm = String(dueDate.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+              const dd = String(dueDate.getDate()).padStart(2, '0');
+
+              const formattedDate = `${yyyy}-${mm}-${dd}`;
+              console.log("Formatted due date:", formattedDate);
+
+              // If you want to set it in an input:
+              // document.getElementById("due_date").value = formattedDate;
+              dueDate = formattedDate;
+              console.log(dueDate)
+            const phone = feesForm.mobile_number.value;
+                fetch('https://shagunivf.com/gym_management/update_due_date.php', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              body: `phone=${encodeURIComponent(phone)}&due_date=${encodeURIComponent(dueDate)}`
+            })
+              .then(response => response.text())
+              .then(data => {
+
+              })
+              .catch(error => {
+                console.error('Error:', error);
+              });
+
+          }
+          alert(result);
+          // const phone = feesForm.mobile_number.value;
+
+          // console.log(feesForm.due_mode.value);
+          // console.log(feesForm.due_date.value,feesForm.mobile_number.value);
+          // const newDate= 
+          // if(feesForm.due_mode.value== "extend"){
+          //   fetch("https://shagunivf.com/gym_management/add_fee.php")
+          // }
+          feesForm.reset();
+          mobileNumberInput.value = '';
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Failed to submit fee record.');
+        });
+    });
+
+  </script>
+
+</body>
+
+</html>

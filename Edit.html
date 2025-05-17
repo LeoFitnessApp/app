@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Search & Update Gym Member</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .results { border: 1px solid #ccc; max-height: 200px; overflow-y: auto; background: white; z-index: 1000; position: absolute; width: 100%; }
+    .result-item { padding: 8px; cursor: pointer; }
+    .result-item:hover { background: #eee; }
+    .message { margin-top: 10px; font-weight: bold; }
+    .error { color: red; }
+    .success { color: green; }
+    .relative { position: relative; }
+  </style>
+</head>
+<body class="bg-light py-4">
+ <nav class="navbar navbar-expand-lg bg-body-tertiary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/index.html">Leo Fitness</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="/index.html">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/view_member.html">Member</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/Add_Member.html">Add Member</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/Add_Fee.html">Add Fee</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/fees_pending.html">Pending Fees</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/backup.html">Backup</a>
+          </li>
+          <li>
+            <a class="nav-link" href="/edit.html">Member Edit</a>
+          </li>
+          <li>
+            <a class="nav-link" href="/edittrans.html">Fees Edit</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+<div class="container">
+  <h2 class="mb-4">Search Gym Member</h2>
+
+  <div class="mb-3 relative">
+    <label for="searchInput" class="form-label">Search by Name or Phone Number</label>
+    <input type="text" id="searchInput" class="form-control" autocomplete="off" placeholder="Type name or phone..." />
+    <div class="results" id="results"></div>
+  </div>
+
+  <form id="updateForm" style="display:none;" class="card card-body shadow-sm mt-4">
+    <h4>Edit Member Details</h4>
+    <input type="hidden" id="memberId" />
+
+    <div class="mb-3">
+      <label for="nameInput" class="form-label">Name</label>
+      <input type="text" id="nameInput" class="form-control" required />
+    </div>
+
+    <div class="mb-3">
+      <label for="phoneInput" class="form-label">Phone Number</label>
+      <input type="tel" id="phoneInput" class="form-control" required pattern="\d{7,20}" />
+    </div>
+
+    <div class="form-check mb-3">
+      <input type="checkbox" class="form-check-input" id="activeInput" />
+      <label class="form-check-label" for="activeInput">Active</label>
+    </div>
+
+    <div class="mb-3">
+      <label for="feesDueInput" class="form-label">Fees Due</label>
+      <input type="date" id="feesDueInput" class="form-control" required />
+    </div>
+
+    <button type="submit" class="btn btn-success">Update Member</button>
+    <div class="message" id="formMessage"></div>
+  </form>
+</div>
+
+<script>
+  const searchInput = document.getElementById('searchInput');
+  const resultsDiv = document.getElementById('results');
+  const form = document.getElementById('updateForm');
+  const memberIdInput = document.getElementById('memberId');
+  const nameInput = document.getElementById('nameInput');
+  const phoneInput = document.getElementById('phoneInput');
+  const activeInput = document.getElementById('activeInput');
+  const feesDueInput = document.getElementById('feesDueInput');
+  const formMessage = document.getElementById('formMessage');
+
+  let timeout = null;
+
+  // Search on typing with debounce
+  searchInput.addEventListener('input', () => {
+    clearTimeout(timeout);
+    const term = searchInput.value.trim();
+    resultsDiv.innerHTML = '';
+    form.style.display = 'none';
+    formMessage.textContent = '';
+
+    if (term.length < 2) return;
+
+    timeout = setTimeout(() => {
+      fetch(`https://shagunivf.com/gym_management/search_members_edit.php?term=${encodeURIComponent(term)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            if (data.data.length === 0) {
+              resultsDiv.innerHTML = '<div class="result-item">No results found</div>';
+            } else {
+              resultsDiv.innerHTML = '';
+              data.data.forEach(m => {
+                const div = document.createElement('div');
+                div.className = 'result-item';
+                div.textContent = `${m.name} (${m.phone_number})`;
+                div.dataset.id = m.id;
+                resultsDiv.appendChild(div);
+              });
+            }
+          } else {
+            resultsDiv.innerHTML = `<div class="result-item error">${data.message}</div>`;
+          }
+        })
+        .catch(() => {
+          resultsDiv.innerHTML = '<div class="result-item error">Search failed</div>';
+        });
+    }, 300);
+  });
+
+  // Click result to load member details
+  resultsDiv.addEventListener('click', e => {
+    if (!e.target.classList.contains('result-item')) return;
+    const id = e.target.dataset.id;
+    if (!id) return;
+
+    // Close search results
+    resultsDiv.innerHTML = '';
+    searchInput.value = '';
+
+    fetch(`https://shagunivf.com/gym_management/get_members.php?id=${id}`)
+      .then(r => r.json())
+      .then(memberData => {
+        if (memberData.success) {
+          fillForm(memberData.data);
+        } else {
+          formMessage.textContent = 'Failed to load member details: ' + memberData.message;
+          formMessage.className = 'message error';
+        }
+      })
+      .catch(() => {
+        formMessage.textContent = 'Error fetching member details';
+        formMessage.className = 'message error';
+      });
+  });
+
+  function fillForm(member) {
+    memberIdInput.value = member.id;
+    nameInput.value = member.name;
+    phoneInput.value = member.phone_number;
+    activeInput.checked = member.active == 1;
+    feesDueInput.value = member.fess_due;
+    formMessage.textContent = '';
+    formMessage.className = 'message';
+    form.style.display = 'block';
+  }
+
+  // Submit updated member
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    formMessage.textContent = '';
+    formMessage.className = 'message';
+
+    const id = parseInt(memberIdInput.value);
+    const name = nameInput.value.trim();
+    const phone_number = phoneInput.value.trim();
+    const active = activeInput.checked ? 1 : 0;
+    const fess_due = feesDueInput.value;
+
+    if (!name || !phone_number || !fess_due) {
+      formMessage.textContent = 'Please fill all required fields.';
+      formMessage.className = 'message error';
+      return;
+    }
+
+    if (!/^\d{7,20}$/.test(phone_number)) {
+      formMessage.textContent = 'Phone number must be 7-20 digits.';
+      formMessage.className = 'message error';
+      return;
+    }
+
+    fetch('https://shagunivf.com/gym_management/update_members.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, name, phone_number, active, fess_due }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          formMessage.textContent = data.message;
+          formMessage.className = 'message success';
+        } else {
+          formMessage.textContent = data.message;
+          formMessage.className = 'message error';
+        }
+      })
+      .catch(() => {
+        formMessage.textContent = 'Update failed.';
+        formMessage.className = 'message error';
+      });
+  });
+</script>
+
+</body>
+</html>
